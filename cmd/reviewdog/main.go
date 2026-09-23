@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -22,6 +23,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/google/go-github/v92/github"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mattn/go-shellwords"
 	"github.com/reviewdog/errorformat/fmts"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v3"
@@ -908,7 +910,12 @@ func gitlabClient(token string) (*gitlab.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := gitlab.NewClient(token, gitlab.WithHTTPClient(newHTTPClient()), gitlab.WithBaseURL(baseURL.String()))
+
+	logHook := func(logger retryablehttp.Logger, req *http.Request, retry int) {
+		log.Printf("[Attempt %d] Requesting: %s %s\n", retry, req.Method, req.URL.String())
+	}
+
+	client, err := gitlab.NewClient(token, gitlab.WithHTTPClient(newHTTPClient()), gitlab.WithBaseURL(baseURL.String()), gitlab.WithRequestLogHook(logHook))
 	if err != nil {
 		return nil, err
 	}

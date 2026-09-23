@@ -41,11 +41,11 @@ func NewGitLabMergeRequestDiff(cli *gitlab.Client, owner, repo string, pr int, s
 func (g *MergeRequestDiff) Diff(ctx context.Context) ([]byte, error) {
 	mr, _, err := g.cli.MergeRequests.GetMergeRequest(g.projects, int64(g.pr), nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get merge request %d for %s on gitlab %s: %w", g.pr, g.projects, g.cli.BaseURL(), err)
 	}
 	targetBranch, _, err := g.cli.Branches.GetBranch(mr.TargetProjectID, mr.TargetBranch, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get branch %s for project %d: %w", mr.TargetBranch, mr.TargetProjectID, err)
 	}
 	return g.gitDiff(ctx, g.sha, targetBranch.Commit.ID)
 }
